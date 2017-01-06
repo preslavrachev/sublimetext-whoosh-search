@@ -23,6 +23,7 @@ from whoosh.qparser import QueryParser
 
 from whoosh.filedb.filestore import FileStorage
 
+
 class BaseCommand():
 	def foo(self):
 		return "bar"
@@ -33,6 +34,7 @@ class BaseCommand():
 		file_object.close()
 
 		return content
+
 
 class IndexProject(sublime_plugin.TextCommand, BaseCommand):
 	def run(self, edit):
@@ -64,6 +66,7 @@ class IndexProject(sublime_plugin.TextCommand, BaseCommand):
 
 		index_writer.add_document(path=file_path, content=content)
 
+
 class SearchProject(sublime_plugin.TextCommand, BaseCommand):
 	def run(self, arg):
 		ix = index.open_dir(index_dir)
@@ -78,6 +81,7 @@ class SearchProject(sublime_plugin.TextCommand, BaseCommand):
 
 				content = BaseCommand.get_file_content(self, result["path"])
 				print(result.highlights("content", text=content))
+
 
 class ClearIndex(sublime_plugin.TextCommand):
 	def run(self, edit):
