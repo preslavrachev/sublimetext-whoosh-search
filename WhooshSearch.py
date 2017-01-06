@@ -83,6 +83,7 @@ class SearchProject(sublime_plugin.TextCommand, BaseCommand):
 				print(result.highlights("content", text=content))
 
 
+
 class ClearIndex(sublime_plugin.TextCommand):
 	def run(self, edit):
 		index_exists = index.exists_in(target_dir)
