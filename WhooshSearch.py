@@ -69,9 +69,15 @@ class IndexProject(sublime_plugin.TextCommand, BaseCommand):
 
 class SearchProject(sublime_plugin.WindowCommand, BaseCommand):
 	def run(self):
-		self.window.show_input_panel("Enter search query:", "", self.__do_search, None, None)
+		self.window.show_input_panel("Enter search query:", "", self.__execute_do_search, None, None)
 
-	def __do_search(self, query):
+	def __execute_do_search(self, query):
+		results_view = self.window.new_file()
+		results_view.run_command('do_search', {"query": query})
+
+class DoSearch(sublime_plugin.TextCommand):
+	def run(self, edit, **args):
+		query = args["query"]
 		ix = index.open_dir(index_dir)
 
 		qp = QueryParser("content", schema=ix.schema)
@@ -80,12 +86,12 @@ class SearchProject(sublime_plugin.WindowCommand, BaseCommand):
 		with ix.searcher() as searcher:
 			results = searcher.search(q, limit=None)
 			print(results)
+
 			for result in results:
-
 				content = BaseCommand.get_file_content(self, result["path"])
-				print(result.highlights("content", text=content))
-
-
+				self.view.insert(edit, 0, result["path"] + "\n")
+				self.view.insert(edit, 0, result.highlights("content", text=content) + "\n")
+				self.view.insert(edit, 0, "------------" + "\n")
 
 class ClearIndex(sublime_plugin.TextCommand):
 	def run(self, edit):
