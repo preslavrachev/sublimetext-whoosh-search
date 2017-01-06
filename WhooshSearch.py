@@ -67,12 +67,15 @@ class IndexProject(sublime_plugin.TextCommand, BaseCommand):
 		index_writer.add_document(path=file_path, content=content)
 
 
-class SearchProject(sublime_plugin.TextCommand, BaseCommand):
-	def run(self, arg):
+class SearchProject(sublime_plugin.WindowCommand, BaseCommand):
+	def run(self):
+		self.window.show_input_panel("Enter search query:", "", self.__do_search, None, None)
+
+	def __do_search(self, query):
 		ix = index.open_dir(index_dir)
 
 		qp = QueryParser("content", schema=ix.schema)
-		q = qp.parse(u"list")
+		q = qp.parse(query)
 
 		with ix.searcher() as searcher:
 			results = searcher.search(q, limit=None)
