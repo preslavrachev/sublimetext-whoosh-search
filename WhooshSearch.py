@@ -18,11 +18,23 @@ if libs_dir not in sys.path:
 
 import whoosh
 import whoosh.index as index
-from whoosh.fields import Schema, TEXT
+from whoosh.fields import Schema, TEXT, STORED
+from whoosh.qparser import QueryParser
 
 from whoosh.filedb.filestore import FileStorage
 
-class IndexProject(sublime_plugin.TextCommand):
+class BaseCommand():
+	def foo(self):
+		return "bar"
+
+	def get_file_content(self, file_path, mode="rb"):
+		file_object = open(file_path, "rb")
+		content = file_object.read().decode("utf-8")
+		file_object.close()
+
+		return content
+
+class IndexProject(sublime_plugin.TextCommand, BaseCommand):
 	def run(self, edit):
 		# project_data = sublime.active_window().project_data()
 		# project_dir = project_data['folders'][0]['path']
@@ -31,7 +43,7 @@ class IndexProject(sublime_plugin.TextCommand):
 		if not os.path.exists(index_dir):
 			os.mkdir(index_dir)
 
-		schema = Schema(path=TEXT, content=TEXT)
+		schema = Schema(path=STORED, content=TEXT)
 		ix = index.create_in(index_dir, schema)
 		index_writer = ix.writer()
 
@@ -48,10 +60,24 @@ class IndexProject(sublime_plugin.TextCommand):
 		return matched_files
 
 	def __add_doc(self, index_writer, file_path):
-		file_object = open(file_path, "rb")
-		content = file_object.read().decode("utf-8")
-		file_object.close()
+		content = self.__get_file_content(file_path)
+
 		index_writer.add_document(path=file_path, content=content)
+
+class SearchProject(sublime_plugin.TextCommand, BaseCommand):
+	def run(self, arg):
+		ix = index.open_dir(index_dir)
+
+		qp = QueryParser("content", schema=ix.schema)
+		q = qp.parse(u"list")
+
+		with ix.searcher() as searcher:
+			results = searcher.search(q, limit=None)
+			print(results)
+			for result in results:
+
+				content = BaseCommand.get_file_content(self, result["path"])
+				print(result.highlights("content", text=content))
 
 class ClearIndex(sublime_plugin.TextCommand):
 	def run(self, edit):

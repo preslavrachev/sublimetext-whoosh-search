@@ -1,6 +1,10 @@
 [
 	{
-		"caption": "WhooshSearch: Index Project",
+		"caption": "WhooshSearch: Index project",
         "command": "index_project"
+	},
+	{
+		"caption": "WhooshSearch: Search within project",
+        "command": "search_project"
 	}
 ]
