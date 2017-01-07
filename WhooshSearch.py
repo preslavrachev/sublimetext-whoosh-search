@@ -1,6 +1,7 @@
 import sublime
 import sublime_plugin
 import fnmatch
+from functools import reduce
 import os
 import sys
 
@@ -72,26 +73,31 @@ class SearchProject(sublime_plugin.WindowCommand, BaseCommand):
 		self.window.show_input_panel("Enter search query:", "", self.__execute_do_search, None, None)
 
 	def __execute_do_search(self, query):
-		results_view = self.window.new_file()
-		results_view.run_command('do_search', {"query": query})
+		rsl = self.__get_search_results(query)
+		self.window.show_quick_panel(rsl, lambda: self.window.active_view().hide_popup(), 0, 0, lambda idx: self.window.active_view().show_popup(str(rsl[idx][1])))
 
-class DoSearch(sublime_plugin.TextCommand):
-	def run(self, edit, **args):
-		query = args["query"]
+	def __get_search_results(self, query):	
 		ix = index.open_dir(index_dir)
 
 		qp = QueryParser("content", schema=ix.schema)
 		q = qp.parse(query)
 
+		results = []
 		with ix.searcher() as searcher:
-			results = searcher.search(q, limit=None)
-			print(results)
+			hits = searcher.search(q, limit=None)
 
-			for result in results:
-				content = BaseCommand.get_file_content(self, result["path"])
-				self.view.insert(edit, 0, result["path"] + "\n")
-				self.view.insert(edit, 0, result.highlights("content", text=content) + "\n")
-				self.view.insert(edit, 0, "------------" + "\n")
+			for hit in hits:
+				result = [hit["path"]]
+				
+				content = BaseCommand.get_file_content(self, hit["path"])
+				highlights = hit.highlights("content", text=content)
+				hl_string = reduce(lambda hl1, hl2: "" + hl1 + "..." + hl2, highlights, "")
+
+				result.append(highlights)
+				results.append(result)	
+
+		return results
+
 
 class ClearIndex(sublime_plugin.TextCommand):
 	def run(self, edit):
