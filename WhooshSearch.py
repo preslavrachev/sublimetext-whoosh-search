@@ -63,7 +63,7 @@ class IndexProject(sublime_plugin.TextCommand, BaseCommand):
 		return matched_files
 
 	def __add_doc(self, index_writer, file_path):
-		content = self.__get_file_content(file_path)
+		content = BaseCommand.get_file_content(self, file_path)
 
 		index_writer.add_document(path=file_path, content=content)
 
