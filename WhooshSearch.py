@@ -7,11 +7,6 @@ import sys
 
 libs_dir = os.path.join(os.path.dirname(__file__), "libs")
 
-# TODO:  Those are some dummy variables for test index creation within
-# the plugin directory. Eventually, this data should come from the
-# project properties
-target_dir = os.path.dirname(__file__)
-index_dir = os.path.join(target_dir, "index")
 file_filter_pattern = "*.py"
 
 if libs_dir not in sys.path:
@@ -36,11 +31,20 @@ class BaseCommand():
 
 		return content
 
+	def get_target_dir(self):
+		window = self.window if hasattr(self, 'window') else self.view.window()
+		folders = window.folders()
+		return folders[0]
+
+	def get_index_dir(self):
+		print(self)
+		return os.path.join(self.get_target_dir(), "index")
+
 
 class IndexProject(sublime_plugin.TextCommand, BaseCommand):
 	def run(self, edit):
-		# project_data = sublime.active_window().project_data()
-		# project_dir = project_data['folders'][0]['path']
+		index_dir = BaseCommand.get_index_dir(self)
+		target_dir = BaseCommand.get_target_dir(self)
 
 		# if the target directory does not exist, create it
 		if not os.path.exists(index_dir):
@@ -50,12 +54,12 @@ class IndexProject(sublime_plugin.TextCommand, BaseCommand):
 		ix = index.create_in(index_dir, schema)
 		index_writer = ix.writer()
 
-		for file_path in self.__list_files(file_filter_pattern):
+		for file_path in self.__list_files(target_dir, file_filter_pattern):
 			self.__add_doc(index_writer, file_path)
 
 		index_writer.commit()
 
-	def __list_files(self, file_filter_pattern):
+	def __list_files(self, target_dir, file_filter_pattern):
 		matched_files = []
 		for root, dirnames, filenames in os.walk(target_dir):
 			for filename in fnmatch.filter(filenames, file_filter_pattern):
@@ -70,15 +74,15 @@ class IndexProject(sublime_plugin.TextCommand, BaseCommand):
 
 class SearchProject(sublime_plugin.WindowCommand, BaseCommand):
 	def run(self):
+		self.index_dir = BaseCommand.get_index_dir(self)
 		self.window.show_input_panel("Enter search query:", "", self.__execute_do_search, None, None)
 
 	def __execute_do_search(self, query):
-		rsl = self.__get_search_results(query)
+		ix = index.open_dir(self.index_dir)
+		rsl = self.__get_search_results(query, ix)
 		self.window.show_quick_panel(rsl, lambda: self.window.active_view().hide_popup(), 0, 0, lambda idx: self.window.active_view().show_popup(str(rsl[idx][1])))
 
-	def __get_search_results(self, query):	
-		ix = index.open_dir(index_dir)
-
+	def __get_search_results(self, query, ix):
 		qp = QueryParser("content", schema=ix.schema)
 		q = qp.parse(query)
 
@@ -99,6 +103,8 @@ class SearchProject(sublime_plugin.WindowCommand, BaseCommand):
 		return results
 
 
-class ClearIndex(sublime_plugin.TextCommand):
+class ClearIndex(sublime_plugin.WindowCommand):
 	def run(self, edit):
-		index_exists = index.exists_in(target_dir)
+		#index_exists = index.exists_in(target_dir)
+		print("fuck")
+		BaseCommand.get_index_dir(self)
